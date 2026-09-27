@@ -2,10 +2,13 @@ source("updater.R")
 
 ################# ADMM optimizer #################
 # MCP proximal updates need gamma * rho > 1 (see Eq. sol_eta / sol_alpha).
+# mu_min: optional lower bound on mu_it = log(lambda_it), applied to beta after
+# each beta update (without it, cells with all-zero counts drift to -Inf).
 # Stops when the primal residuals (A beta - eta, beta - alpha) and the change
 # in beta are all below tol.
 admm_optim <- function(X, y, A, lambda1, lambda2, gamma1, gamma2,
-                       rho1 = 1, rho2 = 1, max_iter = 500, tol = 1e-4) {
+                       rho1 = 1, rho2 = 1, max_iter = 500, tol = 1e-4,
+                       mu_min = -Inf) {
   if (gamma1 * rho1 <= 1) stop("need gamma1 * rho1 > 1 for the MCP update of eta")
   if (gamma2 * rho2 <= 1) stop("need gamma2 * rho2 > 1 for the MCP update of alpha")
 
@@ -20,6 +23,7 @@ admm_optim <- function(X, y, A, lambda1, lambda2, gamma1, gamma2,
 
   for (iter in 1:max_iter) {
     beta_new <- update_beta(beta, X, y, A, rho1, rho2, v, eta, delta, alpha)
+    if (is.finite(mu_min)) beta_new <- clamp_mu(beta_new, ncol(A) - nrow(A), mu_min)
     eta <- update_eta(beta_new, v, rho1, A, lambda1, gamma1)
     alpha <- update_alpha(beta_new, delta, rho2, lambda2, gamma2)
     v <- update_v(v, beta_new, eta, A, rho1)
