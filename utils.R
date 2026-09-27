@@ -62,7 +62,7 @@ hess_neg_loglik <- function(beta, X) {
 get_Q <- function(beta, X, y, A, lambda1, lambda2) {
   nll <- neg_loglik(beta, X, y)
   
-  L <- ncol(A) / nrow(A)
+  L <- ncol(A) - nrow(A) # A is L(T-1) x LT
   Abeta <- A %*% beta
   group_norms <- sapply(seq(1, length(Abeta), by = L), function(k) {
     sqrt(sum(Abeta[k:(k + L - 1)]^2))

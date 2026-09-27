@@ -15,7 +15,7 @@ update_beta <- function(beta, X, y, A, rho1, rho2, v, eta, delta, alpha) {
 
 update_eta <- function(beta, v, rho1, A, lambda1, gamma1) {
   a <- as.vector(A %*% beta + v / rho1)
-  L <- ncol(A) / nrow(A)
+  L <- ncol(A) - nrow(A) # A is L(T-1) x LT
   n_group <- length(a) / L
   eta <- vector("numeric", length(a))
   
@@ -29,7 +29,6 @@ update_eta <- function(beta, v, rho1, A, lambda1, gamma1) {
     } else if (norm_vec <= gamma1 * lambda1) {
       scale <- max(0, 1 - lambda1 / (rho1 * norm_vec))
       denom <- 1 - 1 / (gamma1 * rho1)
-      if (denom <= 0) { denom <- 1e-8 } # prevent divide by zero
       eta[idx] <- scale * vec / denom
     } else {
       eta[idx] <- vec
@@ -47,8 +46,6 @@ update_alpha <- function(beta, delta, rho2, lambda2, gamma2) {
   for (i in seq_along(b)) {
     abs_bi <- abs(b[i])
     denom <- 1 - 1 / (gamma2 * rho2)
-    if (denom <= 0) { denom <- 1e-8 }  # prevent divide by zero
-    
     if (is.na(abs_bi) || is.nan(abs_bi)) {
       alpha[i] <- 0  # fallback safe default
     } else if (abs_bi <= gamma2 * lambda2) {
