@@ -62,7 +62,7 @@ hess_neg_loglik <- function(beta, X) {
 get_Q <- function(beta, X, y, A, lambda1, lambda2) {
   nll <- neg_loglik(beta, X, y)
   
-  L <- ncol(A) / nrow(A)
+  L <- ncol(A) - nrow(A) # A is L(T-1) x LT
   Abeta <- A %*% beta
   group_norms <- sapply(seq(1, length(Abeta), by = L), function(k) {
     sqrt(sum(Abeta[k:(k + L - 1)]^2))
@@ -71,4 +71,13 @@ get_Q <- function(beta, X, y, A, lambda1, lambda2) {
   l1_penalty <- lambda2 * sum(abs(beta))
   
   nll + group_penalty + l1_penalty
+}
+
+################# lower bound on mu #################
+# beta = (beta_1', ..., beta_T')' with mu_t = H beta_t. Clamp mu_t at mu_min
+# and map back to differences. Keeps the fit finite when a cell has all-zero counts.
+clamp_mu <- function(beta, L, mu_min) {
+  B <- matrix(beta, nrow = L)
+  M <- pmax(apply(B, 2, cumsum), mu_min)
+  as.numeric(rbind(M[1, ], diff(M)))
 }
